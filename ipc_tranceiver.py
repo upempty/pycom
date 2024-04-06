@@ -41,6 +41,8 @@ if __name__ == '__main__':
     if server_or_client == 1:
 
         cpid = layer_register_serv_to_cpid("SVC0000".encode('utf-8'))
+        if cpid == -1:
+            sys.exit()
         rcpid = layer_retrieve_cpid_from_serv("SVC0000".encode('utf-8'))
         owncpid = layer_get_own_cpid()
         print(f'Server=cpid = {cpid}, retrieve cpid = {rcpid}, own cpid = {owncpid}======\n')
@@ -56,6 +58,8 @@ if __name__ == '__main__':
     else:
         str = "Hello world from client->server"
         cpid = layer_register_serv_to_cpid("SVC0001".encode('utf-8'))
+        if cpid == -1:
+            sys.exit()
         rcpid = layer_retrieve_cpid_from_serv("SVC0001".encode('utf-8'))
         owncpid = layer_get_own_cpid()
         print(f'Client=cpid = {cpid}, retrieve cpid = {rcpid}, own cpid = {owncpid}======\n')
@@ -79,16 +83,14 @@ if __name__ == '__main__':
 gcc -c -fPIC layer_messaging.c
 gcc -shared -o layer_messaging.so layer_messaging.o
 
+# executing sequences for testing
 #main init process
 ./ipc_setup.py
 
 #service startup:
 ./ipc_tranceiver.py 1
+#wait seconds to exec
 ./ipc_tranceiver.py 0
-
-//int layer_register_serv_to_cpid(char *str)
-//int layer_retrieve_cpid_from_serv(char *str)
-//int layer_get_own_cpid(void)
 
 
 '''

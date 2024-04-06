@@ -107,6 +107,13 @@ int layer_register_serv_to_cpid(char *str)
             printf("CPID to overwrite as it was dead: %d\n", cpid);
             break;
         }
+        if ((len > 1) && (memcmp(cpidPool->cpids[cpid].sname, str, len) == 0) && is_pid_alive(cpidPool->cpids[cpid].pid))
+        {
+            printf("CPID is alive, please rename the service name %d\n", cpid);
+            sem_post(&cpidPool->lock);
+            return -1;
+        }
+
         cpid++;
     }
     if (cpid < MAX_PROCESS_COUNT)
