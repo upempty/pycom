@@ -9,6 +9,7 @@ gcc -shared -o layer_messaging.so layer_messaging.o
 #include <sys/shm.h>
 #include <string.h>
 #include <semaphore.h>
+#include <signal.h>
 
 #define CONTAINER_HEADROOM_LEN 4
 #define MAX_BUFFERS 100
@@ -76,6 +77,12 @@ int initCpidPool(void)
     return 0;
 }
 
+int is_pid_alive(pid_t pid) 
+{
+    int ret = kill(pid, 0);
+    return ret == 0;
+}
+
 int layer_register_serv_to_cpid(char *str)
 {
     printf("layer_register_serv_to_cpid:=%s \n", str);
@@ -88,8 +95,31 @@ int layer_register_serv_to_cpid(char *str)
     cpidPool = (struct CpidPool*)((void *)shm_addr);
     
     sem_wait(&cpidPool->lock);
-    //to find free slots index
+    //to find same sname slot and service is dead.
     int cpid = 0;
+    while (cpid < MAX_PROCESS_COUNT)
+    {
+        int len = strlen(cpidPool->cpids[cpid].sname) + 1;
+        int lenstr = strlen(str)+1;
+        len = len < lenstr ? len : lenstr;
+        if ((len > 1) && (memcmp(cpidPool->cpids[cpid].sname, str, len) == 0) && !is_pid_alive(cpidPool->cpids[cpid].pid))
+        {
+            printf("CPID to overwrite as it was dead: %d\n", cpid);
+            break;
+        }
+        cpid++;
+    }
+    if (cpid < MAX_PROCESS_COUNT)
+    {
+        cpidPool->cpids[cpid].pid = getpid();
+        //memcpy(cpidPool->cpids[cpid].sname, str, len);
+        sem_post(&cpidPool->lock);
+        printf("CPID to reused: %d\n", cpid);
+        return cpid;
+    }
+
+    //to find free slots index
+    cpid = 0;
     while (cpid < MAX_PROCESS_COUNT)
     {
         if (cpidPool->cpids[cpid].pid == 0)

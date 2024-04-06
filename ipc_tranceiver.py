@@ -45,7 +45,7 @@ if __name__ == '__main__':
         owncpid = layer_get_own_cpid()
         print(f'Server=cpid = {cpid}, retrieve cpid = {rcpid}, own cpid = {owncpid}======\n')
         time.sleep(10)
-        print('wait 10s ended', server_or_client)
+        print('wait 10s ended, server or client', server_or_client)
 
         str = "Hello world1 from Server->client"
         print('=====sended11111111111111111======\n')
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         owncpid = layer_get_own_cpid()
         print(f'Client=cpid = {cpid}, retrieve cpid = {rcpid}, own cpid = {owncpid}======\n')
         time.sleep(20)
-        print('wait 20s ended', server_or_client)
+        print('wait 20s ended, server or client', server_or_client)
         print('=====client recv1======\n')
         retstr = tranceiver.msg_recv()
         print(f'tranceiver.msg_recv retvalue= {retstr}')
