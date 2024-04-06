@@ -76,10 +76,6 @@ int initCpidPool(void)
     return 0;
 }
 
-//int layer_register_serv_to_cpid(char *str)
-//int layer_retrieve_cpid_from_serv(char *str)
-//int layer_get_own_cpid(void)
-
 int layer_register_serv_to_cpid(char *str)
 {
     printf("layer_register_serv_to_cpid:=%s \n", str);
@@ -88,9 +84,7 @@ int layer_register_serv_to_cpid(char *str)
     void *shm_addr;
     int shmid;
     shmid = shmget((key_t)CPID_POOL_KEY, sizeof(CpidPool), 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     cpidPool = (struct CpidPool*)((void *)shm_addr);
     
     sem_wait(&cpidPool->lock);
@@ -105,6 +99,7 @@ int layer_register_serv_to_cpid(char *str)
     if (cpid >= MAX_PROCESS_COUNT)
     {
         sem_post(&cpidPool->lock);
+        printf("CPID overflows: %d\n", cpid);
         return -1;
     }
     cpidPool->cpids[cpid].pid = getpid();
@@ -125,9 +120,7 @@ int layer_retrieve_cpid_from_serv(char *str)
     void *shm_addr;
     int shmid;
     shmid = shmget((key_t)CPID_POOL_KEY, sizeof(CpidPool), 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     cpidPool = (struct CpidPool*)((void *)shm_addr);
     
     sem_wait(&cpidPool->lock);
@@ -145,6 +138,7 @@ int layer_retrieve_cpid_from_serv(char *str)
     if (cpid >= MAX_PROCESS_COUNT)
     {
         sem_post(&cpidPool->lock);
+        printf("CPID not found: %d\n", cpid);
         return -1;
     }
     //printf("buf index=%d \n", containers->buffer_index);
@@ -160,9 +154,7 @@ int layer_get_own_cpid(void)
     void *shm_addr;
     int shmid;
     shmid = shmget((key_t)CPID_POOL_KEY, sizeof(CpidPool), 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     cpidPool = (struct CpidPool*)((void *)shm_addr);
     
     sem_wait(&cpidPool->lock);
@@ -177,6 +169,7 @@ int layer_get_own_cpid(void)
     if (cpid >= MAX_PROCESS_COUNT)
     {
         sem_post(&cpidPool->lock);
+        printf("CPID not found: %d\n", cpid);
         return -1;
     }
     //printf("buf index=%d \n", containers->buffer_index);
@@ -214,11 +207,8 @@ int layer_mem_reserve(char *str)
     void *shm_addr;
     int shmid;
     shmid = shmget((key_t)CONTAINER_KEY, sizeof(Containers) + CONTAINER_HEADROOM_LEN, 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     containers = (struct Containers*)((void *)shm_addr + CONTAINER_HEADROOM_LEN);
-    printf("write to shared memory=%d\n", CONTAINER_KEY);
     
     //char *str = "first msg to sent";
     int msg_len = strlen(str) + 1;
@@ -252,45 +242,36 @@ int layer_mem_reserve(char *str)
 //receive from buf index
 char* layer_mem_receive(int buf_id)
 {
-    printf("layer_mem_release");
+    printf("layer_mem_receive \n");
     Containers *containers;
     void *shm_addr;
     char tmp[20];
     int shmid;
     shmid = shmget((key_t)CONTAINER_KEY, sizeof(Containers) + CONTAINER_HEADROOM_LEN, 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     containers = (struct Containers*)((void *)shm_addr + CONTAINER_HEADROOM_LEN);
-    printf("write to shared memory=%d\n", CONTAINER_KEY);
-    
-    printf("buf content=%s \n", containers->buf[buf_id]);
+    printf("buf content received=%s \n", containers->buf[buf_id]);
     return containers->buf[buf_id];
 }
 
-
 int layer_mem_release(int buf_id)
 {
-    printf("layer_mem_release");
+    printf("layer_mem_release \n");
     Containers *containers;
     void *shm_addr;
     int shmid;
     shmid = shmget((key_t)CONTAINER_KEY, sizeof(Containers) + CONTAINER_HEADROOM_LEN, 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     containers = (struct Containers*)((void *)shm_addr + CONTAINER_HEADROOM_LEN);
-    printf("write to shared memory=%d\n", CONTAINER_KEY);
     
     sem_wait(&containers->lock);
     containers->reserved[buf_id] = 0; //!!! important
     memset(containers->buf[buf_id], 0, MAX_MSG_SIZE);
-    printf("buf content=%s \n", containers->buf[buf_id]);
+    printf("buf content release=%s \n", containers->buf[buf_id]);
     sem_post(&containers->lock);
 
     return 0;
 }
-
 
 int initQueues(void) 
 {
@@ -324,10 +305,7 @@ int layer_push_queue(int cpid, int buf_id)
 
     int shmid;
     shmid = shmget((key_t)QUEUE_KEY, sizeof(MsgQueues), 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
-
     msgQs = (struct MsgQueues*)((void *)shm_addr);
 
     sem_wait(&msgQs->msgQueue[cpid].lock);
@@ -344,9 +322,6 @@ int layer_push_queue(int cpid, int buf_id)
     msgQs->msgQueue[cpid].length++;
 
     printf("shared memory updated in-1=%d, len=%d\n", in, msgQs->msgQueue[cpid].length);
-    printf("push sleep 60 --------------------\n");
-    //sleep(30);
-    printf("push sleep 60 done----------------\n");
     sem_post(&msgQs->msgQueue[cpid].lock);
 
     return 0;
@@ -359,16 +334,10 @@ int layer_pop_queue(int cpid)
     void *shm_addr;
     int shmid;
     shmid = shmget((key_t)QUEUE_KEY, sizeof(MsgQueues), 0666 | IPC_CREAT);
-    printf("Key of shared memory is %d\n", shmid);
     shm_addr = shmat(shmid, NULL, 0);
-    printf("Process attached at %p\n", shm_addr);
     msgQs = (struct MsgQueues*)((void *)shm_addr);
     
-    printf("pop---------- block --------------------\n");
-
-
     int r = sem_wait(&msgQs->msgQueue[cpid].lock);
-    printf("pop---------- block->get lock entrered--------------------\n");
     //the process's queue is emoty
     if (msgQs->msgQueue[cpid].length == 0)
     {
@@ -385,16 +354,3 @@ int layer_pop_queue(int cpid)
 
     return buf_id;
 }
-
-int layer_register_service(char* str)
-{
-    return 0;
-}
-
-int layer_retrieve_container_id(char* str)
-{
-    return 0;
-}
-//ret = register_serv_to_cpid('SVC0000')
-//ret = retrieve_cpid_from_serv('SVC0000')
-//ret = get_own_cpid()
