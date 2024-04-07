@@ -7,6 +7,13 @@ gcc -shared -o layer_messaging.so layer_messaging.o
 #main init process
 ./ipc_setup.py
 
+#start client0 and client1 to communicate each other.
+./ipc_client0.py
+./ipc_client1.py
+
+
+
+==old way
 #service startup:
 ./ipc_tranceiver.py 1
 

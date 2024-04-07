@@ -168,7 +168,7 @@ int layer_retrieve_cpid_from_serv(char *str)
         int len = strlen(cpidPool->cpids[cpid].sname) + 1;
         int lenstr = strlen(str)+1;
         len = len < lenstr ? len : lenstr;
-        if (memcmp(cpidPool->cpids[cpid].sname, str, len) == 0)
+        if (len > 1 && memcmp(cpidPool->cpids[cpid].sname, str, len) == 0)
             break;
         cpid++;
     }
@@ -272,7 +272,6 @@ int layer_mem_reserve(char *str)
     printf("buf content=%s \n", containers->buf[buf_id]);
     sem_post(&containers->lock);
 
-    //to use sem_t for lock/unlok, sem_open, sem_wait, sem_post
     return buf_id;
 }
 

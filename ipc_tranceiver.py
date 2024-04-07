@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #ipc_tranceiver.py
-import time
+
 from ipc_lib import *
 
 class Tranceiver:
@@ -10,10 +10,15 @@ class Tranceiver:
     def msg_send(self, str, receiver):
         buf_id = layer_mem_reserve(str.encode('utf-8'))
         print(f'msg_send: buf_id = {buf_id} layer_mem_reserve')
+        if buf_id == -1:
+            return -1
         cpid = layer_retrieve_cpid_from_serv(receiver.encode('utf-8'))
         print(f'msg_send: cpid of receiver= {cpid} layer_retrieve_cpid_from_serv')
+        if cpid == -1:
+            return -1
         ret = layer_push_queue(ctypes.c_int(cpid),ctypes.c_int(buf_id))
         print(f'msg_send ret = {ret} layer_push_queue')
+        return ret
 
     def msg_recv(self):
         cpid = layer_get_own_cpid()
@@ -32,14 +37,14 @@ class Tranceiver:
         print(f'msg_recv: ret = {ret}  layer_mem_release')
         print(f'py after release decode= {retstr} in layer_mem_receive')
         return retstr
+'''
 
 if __name__ == '__main__':
     print('in main ipc_tranceiver\n')
+    tranceiver = Tranceiver()
     server_or_client = int(sys.argv[1])
 
-    tranceiver = Tranceiver()
     if server_or_client == 1:
-
         cpid = layer_register_serv_to_cpid("SVC0000".encode('utf-8'))
         if cpid == -1:
             sys.exit()
@@ -80,6 +85,9 @@ if __name__ == '__main__':
     print('in main end\n')
 
 '''
+
+
+'''
 gcc -c -fPIC layer_messaging.c
 gcc -shared -o layer_messaging.so layer_messaging.o
 
@@ -92,5 +100,17 @@ gcc -shared -o layer_messaging.so layer_messaging.o
 #wait seconds to exec
 ./ipc_tranceiver.py 0
 
-
+tranceiver = Tranceiver()
+while True:
+    time.sleep()
+    own = "SVC0000"
+    msg = "Hello world sent from SVC0000 to SVC0001"
+    receiver = "SVC00001"
+    cpid = layer_register_serv_to_cpid(own.encode('utf-8'))
+    print(f'layer_register_serv_to_cpid {own} ret= {cpid}')
+    ret = tranceiver.msg_send(msg, receiver)
+    print(f'tranceiver.msg_send ret= {ret}')
+    retstr = tranceiver.msg_recv()
+    print(f'tranceiver.msg_recv retvalue= {retstr}')
 '''
+
