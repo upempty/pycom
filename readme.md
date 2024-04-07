@@ -13,7 +13,7 @@ gcc -shared -o layer_messaging.so layer_messaging.o
 
 
 
-==old way
+==legacy way
 #service startup:
 ./ipc_tranceiver.py 1
 
